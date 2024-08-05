@@ -1,4 +1,6 @@
+.idea/
 dist
 TODO*
+coverage.txt
 launch.json
-
+restish

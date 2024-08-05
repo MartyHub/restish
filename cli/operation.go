@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -127,18 +126,16 @@ func (o Operation) command() *cobra.Command {
 				}
 			}
 
-			var body io.Reader
+			req, _ := http.NewRequest(o.Method, uri, nil)
+
+			req.Header = headers
 
 			if o.BodyMediaType != "" {
-				b, err := GetBody(o.BodyMediaType, args[len(o.PathParams):])
-				if err != nil {
+				if err := SetBody(o.BodyMediaType, args[len(o.PathParams):], req); err != nil {
 					panic(err)
 				}
-				body = strings.NewReader(b)
 			}
 
-			req, _ := http.NewRequest(o.Method, uri, body)
-			req.Header = headers
 			MakeRequestAndFormat(req)
 		},
 	}

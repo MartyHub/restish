@@ -54,17 +54,12 @@ var au aurora.Aurora
 var currentConfig *APIConfig
 
 func generic(method string, addr string, args []string) {
-	var body io.Reader
+	req, _ := http.NewRequest(method, fixAddress(addr), nil)
 
-	d, err := GetBody("application/json", args)
-	if err != nil {
+	if err := SetBody("application/json", args, req); err != nil {
 		panic(err)
 	}
-	if len(d) > 0 {
-		body = strings.NewReader(d)
-	}
 
-	req, _ := http.NewRequest(method, fixAddress(addr), body)
 	MakeRequestAndFormat(req)
 }
 
@@ -109,7 +104,10 @@ func matchTemplate(url, template string) string {
 // completeCurrentConfig generates possible completions based on the currently
 // selected API configuration's known operation URL templates. Takes into
 // account short-names as well as the full URL.
-func completeCurrentConfig(cmd *cobra.Command, args []string, toComplete string, method string) ([]string, cobra.ShellCompDirective) {
+func completeCurrentConfig(cmd *cobra.Command,
+	args []string,
+	toComplete string,
+	method string) ([]string, cobra.ShellCompDirective) {
 	possible := []string{}
 	if currentConfig != nil {
 		for _, cmd := range Root.Commands() {
@@ -165,7 +163,9 @@ func completeCurrentConfig(cmd *cobra.Command, args []string, toComplete string,
 
 // completeGenericCmd shows possible completions for generic commands, for
 // example get/post/put/patch/delete/etc.
-func completeGenericCmd(method string, showAPIs bool) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func completeGenericCmd(method string, showAPIs bool) func(cmd *cobra.Command,
+	args []string,
+	toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		possible, directive := completeCurrentConfig(cmd, args, toComplete, method)
 		if directive != cobra.ShellCompDirectiveDefault {
@@ -475,7 +475,13 @@ Subject: %s
 Signature Algorithm: %s
 Not before: %s
 Not after (expires): %s (%s)
-`, c.Issuer.String(), c.Subject.String(), c.SignatureAlgorithm.String(), c.NotBefore.String(), c.NotAfter.String(), expiresRelative)
+`,
+					c.Issuer.String(),
+					c.Subject.String(),
+					c.SignatureAlgorithm.String(),
+					c.NotBefore.String(),
+					c.NotAfter.String(),
+					expiresRelative)
 
 				if len(c.DNSNames) > 0 {
 					info += "DNS names:\n  " + strings.Join(c.DNSNames, "\n  ") + "\n"
@@ -539,7 +545,11 @@ Not after (expires): %s (%s)
 	AddGlobalFlag("rsh-verbose", "v", "Enable verbose log output", false, false)
 	AddGlobalFlag("rsh-output-format", "o", "Output format [auto, json, table, ...]", "auto", false)
 	AddGlobalFlag("rsh-filter", "f", "Filter / project results using shorthand query", "", false)
-	AddGlobalFlag("rsh-raw", "r", "Output result of query as raw rather than an escaped JSON string or list", false, false)
+	AddGlobalFlag("rsh-raw",
+		"r",
+		"Output result of query as raw rather than an escaped JSON string or list",
+		false,
+		false)
 	AddGlobalFlag("rsh-server", "s", "Override scheme://server:port for an API", "", false)
 	AddGlobalFlag("rsh-header", "H", "Add custom header", []string{}, true)
 	AddGlobalFlag("rsh-query", "q", "Add custom query param", []string{}, true)
@@ -554,19 +564,21 @@ Not after (expires): %s (%s)
 	AddGlobalFlag("rsh-retry", "", "Number of times to retry on certain failures", 2, false)
 	AddGlobalFlag("rsh-timeout", "t", "Timeout for HTTP requests", time.Duration(0), false)
 
-	Root.RegisterFlagCompletionFunc("rsh-output-format", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"auto", "json", "yaml"}, cobra.ShellCompDirectiveNoFileComp
-	})
+	Root.RegisterFlagCompletionFunc("rsh-output-format",
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return []string{"auto", "json", "yaml"}, cobra.ShellCompDirectiveNoFileComp
+		})
 
-	Root.RegisterFlagCompletionFunc("rsh-profile", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		profiles := []string{}
-		if currentConfig != nil {
-			for profile := range currentConfig.Profiles {
-				profiles = append(profiles, profile)
+	Root.RegisterFlagCompletionFunc("rsh-profile",
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			profiles := []string{}
+			if currentConfig != nil {
+				for profile := range currentConfig.Profiles {
+					profiles = append(profiles, profile)
+				}
 			}
-		}
-		return profiles, cobra.ShellCompDirectiveNoFileComp
-	})
+			return profiles, cobra.ShellCompDirectiveNoFileComp
+		})
 
 	initAPIConfig()
 }
